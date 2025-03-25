@@ -1,12 +1,14 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const rottify = require('brain-rottify-text');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 9001;
+const API_PREFIX = process.env.API_PREFIX || '/api';
 
 // Middleware
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use(express.json());
 
 // Debug logging
@@ -16,7 +18,7 @@ app.use((req, res, next) => {
 });
 
 // Endpoint to get available options
-app.get('/api/options', (req, res) => {
+app.get(`${API_PREFIX}/options`, (req, res) => {
     try {
         // Check if the module provides a way to get default options
         let options = {};
@@ -45,7 +47,7 @@ app.get('/api/options', (req, res) => {
 });
 
 // API endpoint for rottifying text
-app.post('/api/rottify', (req, res) => {
+app.post(`${API_PREFIX}/rottify`, (req, res) => {
     console.log('Received request to rottify:', req.body);
     const { text, options } = req.body;
     
@@ -69,8 +71,5 @@ app.post('/api/rottify', (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
-    
-    // Log available module properties to help with debugging
-    console.log('Available module properties:', Object.keys(rottify));
-    console.log('rottifyText type:', typeof rottify.rottifyText);
+    console.log(`API endpoints available at ${API_PREFIX}`);
 });
