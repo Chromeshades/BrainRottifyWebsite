@@ -1,0 +1,236 @@
+<!-- filepath: /root/brain-rottify-website/public/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brain Rottify</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <header>
+        <h1>Brain Rottify</h1>
+    </header>
+
+    <div class="container">
+        <p>Enter text below to rottify it!</p>
+        
+        <div class="input-section">
+            <textarea id="input-text" placeholder="Enter your text here..."></textarea>
+        </div>
+        
+        <div class="options-container">
+            <button id="toggle-options" class="options-toggle">Show Options ▼</button>
+            <div id="options-panel" class="options-panel">
+                <div id="options-content">
+                    <!-- Options will be dynamically loaded here -->
+                    <p>Loading available options...</p>
+                </div>
+            </div>
+        </div>
+        
+        <button id="convert-button">Rottify It!</button>
+        
+        <div class="output-section">
+            <h2>Result:</h2>
+            <div id="output-text" class="output-box"></div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>&copy; 2025 Brain Rottify</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded');
+            const inputText = document.getElementById('input-text');
+            const outputText = document.getElementById('output-text');
+            const convertButton = document.getElementById('convert-button');
+            const toggleOptions = document.getElementById('toggle-options');
+            const optionsPanel = document.getElementById('options-panel');
+            const optionsContent = document.getElementById('options-content');
+            
+            // Initially hide the options panel
+            optionsPanel.style.display = 'none';
+            
+            // Show/hide options panel
+            toggleOptions.addEventListener('click', () => {
+                const isVisible = optionsPanel.style.display !== 'none' && optionsPanel.style.display !== '';
+                optionsPanel.style.display = isVisible ? 'none' : 'block';
+                toggleOptions.textContent = isVisible ? 'Show Options ▼' : 'Hide Options ▲';
+                
+                // Fetch available options if opening panel for first time
+                if (!isVisible && optionsContent.innerHTML.includes('Loading')) {
+                    fetchAvailableOptions();
+                }
+            });
+            
+            // Fetch available options from the server
+            async function fetchAvailableOptions() {
+                try {
+                    const response = await fetch('/api/options');
+                    const data = await response.json();
+                    
+                    if (data.error) {
+                        optionsContent.innerHTML = `<p>Error loading options: ${data.error}</p>`;
+                        return;
+                    }
+                    
+                    renderOptionsUI(data.options);
+                } catch (error) {
+                    console.error('Error fetching options:', error);
+                    optionsContent.innerHTML = '<p>Failed to load options. Please try again later.</p>';
+                }
+            }
+            
+            // Render options UI based on available options
+            function renderOptionsUI(options) {
+                if (!options || Object.keys(options).length === 0) {
+                    optionsContent.innerHTML = '<p>No configurable options available.</p>';
+                    return;
+                }
+                
+                let optionsHTML = '';
+                
+                Object.entries(options).forEach(([key, value]) => {
+                    const id = `option-${key}`;
+                    const type = typeof value;
+                    
+                    optionsHTML += `<div class="option-group">`;
+                    
+                    if (key === 'includeSlang') {
+                        // Special handling for slang array
+                        optionsHTML += `<label>Include Slang:</label>`;
+                        optionsHTML += `<div class="checkbox-group">`;
+                        
+                        // GenZ option
+                        const genzChecked = Array.isArray(value) && value.includes('GenZ');
+                        optionsHTML += `
+                            <div>
+                                <input type="checkbox" id="option-slang-genz" ${genzChecked ? 'checked' : ''}>
+                                <label for="option-slang-genz">GenZ</label>
+                            </div>
+                        `;
+                        
+                        // Millennial option
+                        const millennialChecked = Array.isArray(value) && value.includes('Millennial');
+                        optionsHTML += `
+                            <div>
+                                <input type="checkbox" id="option-slang-millennial" ${millennialChecked ? 'checked' : ''}>
+                                <label for="option-slang-millennial">Millennial</label>
+                            </div>
+                        `;
+                        
+                        optionsHTML += `</div>`;
+                    } else if (type === 'boolean') {
+                        optionsHTML += `
+                            <input type="checkbox" id="${id}" ${value ? 'checked' : ''}>
+                            <label for="${id}">${key}</label>
+                        `;
+                    } else if (type === 'number') {
+                        optionsHTML += `
+                            <label for="${id}">${key}:</label>
+                            <input type="range" id="${id}" value="${value}" min="1" max="10" step="1">
+                            <span id="${id}-value">${value}</span>
+                        `;
+                    } else if (type === 'string') {
+                        optionsHTML += `
+                            <label for="${id}">${key}:</label>
+                            <input type="text" id="${id}" value="${value}">
+                        `;
+                    }
+                    
+                    optionsHTML += `</div>`;
+                });
+                
+                optionsContent.innerHTML = optionsHTML;
+                
+                // Add event listeners for range inputs
+                document.querySelectorAll('input[type="range"]').forEach(range => {
+                    const valueSpan = document.getElementById(`${range.id}-value`);
+                    if (valueSpan) {
+                        range.addEventListener('input', () => {
+                            valueSpan.textContent = range.value;
+                        });
+                    }
+                });
+            }
+            
+            // Get current options from UI
+            function getCurrentOptions() {
+                const options = {};
+                
+                // Handle standard inputs
+                document.querySelectorAll('.option-group').forEach(group => {
+                    const input = group.querySelector('input:not([id^="option-slang-"])');
+                    if (!input) return;
+                    
+                    const id = input.id;
+                    if (!id || !id.startsWith('option-')) return;
+                    
+                    const key = id.replace('option-', '');
+                    
+                    if (input.type === 'checkbox') {
+                        options[key] = input.checked;
+                    } else if (input.type === 'range' || input.type === 'number') {
+                        options[key] = parseInt(input.value);
+                    } else {
+                        options[key] = input.value;
+                    }
+                });
+                
+                // Special handling for slang options
+                const slangGenZ = document.getElementById('option-slang-genz');
+                const slangMillennial = document.getElementById('option-slang-millennial');
+                
+                if (slangGenZ || slangMillennial) {
+                    options.includeSlang = [];
+                    
+                    if (slangGenZ && slangGenZ.checked) {
+                        options.includeSlang.push('GenZ');
+                    }
+                    
+                    if (slangMillennial && slangMillennial.checked) {
+                        options.includeSlang.push('Millennial');
+                    }
+                    
+                    // If no slang options selected, don't include the empty array
+                    if (options.includeSlang.length === 0) {
+                        delete options.includeSlang;
+                    }
+                }
+                
+                return options;
+            }
+            
+            convertButton.addEventListener('click', async () => {
+                console.log('Button clicked');
+                const textToRottify = inputText.value;
+                const options = getCurrentOptions();
+                
+                console.log('Options:', options);
+                
+                try {
+                    const response = await fetch('/api/rottify', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ 
+                            text: textToRottify,
+                            options: options
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    outputText.textContent = data.result;
+                } catch (error) {
+                    console.error('Error:', error);
+                    outputText.textContent = 'Error rottifying text!';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
