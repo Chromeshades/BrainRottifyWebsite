@@ -2,6 +2,8 @@
 
 This project is a simple website that utilizes the `brain-rottify-text` library to manipulate text on the webpage. Below are the details for setting up and using the project.
 
+![Screenshot 2025-03-25 at 7 37 55 AM](https://github.com/user-attachments/assets/8df9eb99-81bf-4383-a53b-d17c21bc0e69)
+
 ## Project Structure
 
 ```
@@ -33,6 +35,9 @@ brain-rottify-website
 
 3. **Run the project:**
    You can start a simple server using the `src/index.js` file or open `public/index.html` directly in your browser.
+   ```
+   npm start
+   ```
 
 ## Usage
 
@@ -41,4 +46,4 @@ brain-rottify-website
 
 ## License
 
-This project is licensed under the ISC License.
+This project is licensed under the MIT License.
